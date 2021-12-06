@@ -26,9 +26,6 @@ lmain = tk.Label(root)
 lmain.pack()
 
 
-
-
-
 def show_frame():
     _, frame = cap.read()
     # Convert to grayscale
@@ -62,8 +59,8 @@ async def upload(base64_string):
     headers = {
         'Content-Type': 'application/json'
     }
-
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request(
+        "POST", url, headers=headers, data=payload).status_code
     return response
 
 
@@ -83,10 +80,15 @@ def helloCallBack():
     encoded = base64.b64encode(bytes_string).decode("ascii")
     encoded = 'data:image/png;base64,{}'.format(encoded)
     cv2.imwrite('txt.jpg', crop_img)
-    asyncio.run(upload(encoded))
-    messagebox.showinfo("Success", "Checked in successfully")
-    frame = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+    res_code = asyncio.run(upload(encoded))
     
+    if(res_code == 200):
+        messagebox.showinfo("Success", "Checked in successfully")
+    else:
+        messagebox.showinfo("Error", "Not Found")
+
+    frame = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+
 
 # get image from camera cv2
 
