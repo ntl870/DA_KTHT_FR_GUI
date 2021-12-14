@@ -3,7 +3,7 @@ import threading
 import time
 import tkinter as tk
 from tkinter import *
-from PIL import Image
+from tkinter import messagebox
 import multiprocessing
 import cv2
 from PIL import Image, ImageTk
@@ -21,14 +21,16 @@ cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
-file="loader.gif"
+file = "loader.gif"
 info = Image.open(file)
 frames = info.n_frames  # gives total number of frames that gif contains
 # creating list of PhotoImage objects for each frames
 # im = [tk.PhotoImage(file=file,format=f"gif -index {i}"w) for i in range(frames)]
-im= None
+im = None
 anim = None
-def animation(count,loadingWindow, gif_label):
+
+
+def animation(count, loadingWindow, gif_label):
     global anim
     global im
     im2 = im[count]
@@ -37,33 +39,38 @@ def animation(count,loadingWindow, gif_label):
     count += 1
     if count == frames:
         count = 0
-    anim = loadingWindow.after(50,lambda :animation(count,loadingWindow,gif_label))
-    
+    anim = loadingWindow.after(
+        50, lambda: animation(count, loadingWindow, gif_label))
+
+
 def executeLoadingWindow():
     count = 0
     global im
     loadingWindow = Toplevel(root)
-    im = [tk.PhotoImage(file=file,format=f"gif -index {i}") for i in range(frames)]
-    gif_label = tk.Label(loadingWindow,image="")
-    
+    im = [tk.PhotoImage(
+        file=file, format=f"gif -index {i}") for i in range(frames)]
+    gif_label = tk.Label(loadingWindow, image="")
+
     gif_label.pack()
-    animation(count,loadingWindow,gif_label)
+    animation(count, loadingWindow, gif_label)
 
     loadingWindow.mainloop()
 
 
 def sendRequest():
-    
+
     t = time.time()
 
     proc = multiprocessing.Process(target=executeLoadingWindow, args=())
     proc.start()
     time.sleep(3)
-        # Terminate the process
+    # Terminate the process
     proc.terminate()  # sends a SIGTERM
-    print ("done in ", time.time()- t)
+    print("done in ", time.time() - t)
 
 # sendRequest()
+
+
 def show_frame():
     _, frame = cap.read()
     # Convert to grayscale
@@ -85,9 +92,7 @@ def show_frame():
     return faces
 
 
-
-
-async def upload(base64_string):
+def upload(base64_string):
     url = "http://127.0.0.1:8000/identify"
 
     payload = json.dumps({
@@ -99,6 +104,10 @@ async def upload(base64_string):
     response = requests.request(
         "POST", url, headers=headers, data=payload).status_code
     return response
+
+
+def sleep3():
+    time.sleep(3)
 
 
 def helloCallBack():
@@ -117,20 +126,29 @@ def helloCallBack():
     encoded = base64.b64encode(bytes_string).decode("ascii")
     encoded = 'data:image/png;base64,{}'.format(encoded)
     cv2.imwrite('txt.jpg', crop_img)
-    
+
     # res_code = asyncio.run(upload(encoded))
-    proc = multiprocessing.Process(target=executeLoadingWindow, args=())
-    proc.start()
-    time.sleep(3)
-    # Terminate the process
-    proc.terminate() 
-    # if(res_code == 200):
-    #     messagebox.showinfo("Success", "Checked in successfully")
-    # else:
-    #     messagebox.showinfo("Error", "Not Found")
+    try:
+        proc = multiprocessing.Process(target=executeLoadingWindow, args=())
+        proc2 = multiprocessing.Process(target=sleep3, args=())
+        proc2.start()
+        proc.start()
+        
+        # time.sleep(3)
+        # res_code = upload(encoded)
+        # Terminate the process
+        # print(res_code)
+        # if(res_code == 200):
+        #     messagebox.showinfo("Success", "Checked in successfully")
+        # else:
+        #     messagebox.showinfo("Error", "Not Found")
+        proc2.close()
+        proc.close()
 
-    # frame = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+    except:
+        pass
 
+    frame = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
 
 
 try:
@@ -141,7 +159,6 @@ try:
     lmain.pack()
 
     B = Button(root, text="Hello", command=helloCallBack)
-
     B.pack()
     root.mainloop()
 except:

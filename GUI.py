@@ -1,6 +1,5 @@
 import tkinter as tk
 import cv2
-import threading
 from tkinter import *
 from tkinter import messagebox
 from PIL import Image, ImageTk
@@ -10,14 +9,12 @@ import numpy as np
 import pyrebase
 import os
 import asyncio
-import time
-import multiprocessing
 
 import requests
 import json
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
-anim = None
+
 width, height = 800, 600
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
@@ -28,37 +25,6 @@ root.bind('<Escape>', lambda e: root.quit())
 lmain = tk.Label(root)
 lmain.pack()
 
-
-file="loader.gif"
-info = Image.open(file)
-frames = info.n_frames  # gives total number of frames that gif contains
-# creating list of PhotoImage objects for each frames
-# im = [tk.PhotoImage(file=file,format=f"gif -index {i}"w) for i in range(frames)]
-im= None
-anim = None
-def animation(count,loadingWindow, gif_label):
-    global anim
-    global im
-    im2 = im[count]
-
-    gif_label.configure(image=im2)
-    count += 1
-    if count == frames:
-        count = 0
-    anim = loadingWindow.after(50,lambda :animation(count,loadingWindow,gif_label))
-    
-def executeLoadingWindow():
-    count = 0
-    global im
-    loadingWindow = tk.Tk()
-    im = [tk.PhotoImage(file=file,format=f"gif -index {i}") for i in range(frames)]
-    gif_label = tk.Label(loadingWindow,image="")
-    
-    gif_label.pack()
-    animation(count,loadingWindow,gif_label)
-
-    loadingWindow.mainloop()
-    
 
 def show_frame():
     _, frame = cap.read()
@@ -85,10 +51,11 @@ show_frame()
 
 
 async def upload(base64_string):
-    url = "http://127.0.0.1:8000/identify"
+    url = "https://87d2-42-117-179-248.ngrok.io/identify"
 
     payload = json.dumps({
-        "photo": base64_string
+        "photo": base64_string,
+        "groupId": "6150b5c637cef39b11366cc8",
     })
     headers = {
         'Content-Type': 'application/json'
@@ -114,23 +81,15 @@ def helloCallBack():
     encoded = base64.b64encode(bytes_string).decode("ascii")
     encoded = 'data:image/png;base64,{}'.format(encoded)
     cv2.imwrite('txt.jpg', crop_img)
+    res_code = asyncio.run(upload(encoded))
     
-    # res_code = asyncio.run(upload(encoded))
-    proc = multiprocessing.Process(target=executeLoadingWindow, args=())
-    proc.start()
-    time.sleep(3)
-        # Terminate the process
-    proc.terminate() 
-    print("done")
-    # if(res_code == 200):
-    #     messagebox.showinfo("Success", "Checked in successfully")
-    # else:
-    #     messagebox.showinfo("Error", "Not Found")
+    if(res_code == 200):
+        messagebox.showinfo("Success", "Checked in successfully")
+    else:
+        messagebox.showinfo("Error", "Not Found")
 
     frame = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
 
-def sleep():
-    time.sleep(3)
 
 # get image from camera cv2
 
